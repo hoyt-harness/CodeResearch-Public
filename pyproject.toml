@@ -1,34 +1,20 @@
 # pyproject.toml
 
 # --- [tool.black] ---
-# Black is the code formatter. It is highly opinionated, which is good for consistency.
 [tool.black]
 line-length = 88
-target-version = ['py311', 'py312'] # Set to your desired Python versions
-include = '\.pyi?$'
+target-version = ['py311', 'py312']
 
-# --- [tool.flake8] ---
-# Flake8 is the linter. It checks for style, complexity, and errors.
-# NOTE: Flake8 does not natively support pyproject.toml, but tools like
-# `flake8-pyproject` or modern linters like Ruff (recommended alternative) do.
-# If using vanilla Flake8, you'll need a separate `.flake8` file or use Ruff.
-
+# --- [tool.ruff] ---
 [tool.ruff]
-# Ruff is an extremely fast linter and formatter that consolidates Flake8, isort, etc.
-# Given your technical background, this is the superior, modern choice.
-# This section REPLACES the need for a complex Flake8 config.
-
 # E = pycodestyle errors, F = pyflakes errors, B = bugbear (common source of bugs)
 select = ["E", "F", "W", "I", "B"]
 ignore = [
-    # E501: Line too long. Black handles this, and Ruff can check after Black.
+    # E501: Line too long. Black/Ruff formatting handles this.
     "E501",
-    # W503: Line break before binary operator (Black standard is to break before).
-    "W503",
+    # W503 has been removed/deprecated by Ruff and is no longer needed/valid.
 ]
 line-length = 88
 
 # Ruff's built-in formatter section
 [tool.ruff.format]
-# The format settings automatically follow the linting settings (like line-length)
-# and ensure compatibility with the Black style.
