@@ -52,8 +52,8 @@ for d in research_dir.iterdir():
             else:
                 # No git history, use directory modification time
                 subdirs_with_dates.append((d.name, datetime.fromtimestamp(d.stat().st_mtime)))
-        except Exception:
-            # Fallback to directory modification time
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError, ValueError, OSError):
+            # Fallback to directory modification time if git fails or date parsing fails
             subdirs_with_dates.append((d.name, datetime.fromtimestamp(d.stat().st_mtime)))
 
 # Sort by date, most recent first
@@ -83,7 +83,8 @@ for dirname, commit_date in subdirs_with_dates:
             if origin.endswith('.git'):
                 origin = origin[:-4]
             github_url = f"{origin}/tree/main/{dirname}"
-    except Exception:
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError):
+        # Git command may fail if not in a git repo or network issues
         pass
 
     if github_url:
@@ -103,13 +104,14 @@ for dirname, commit_date in subdirs_with_dates:
     elif readme_path.exists():
         # Generate new summary using llm command
         prompt = """Summarize this research project concisely. Write just 1 paragraph (3-5 sentences) followed by an optional short bullet list if there are key findings. Vary your opening - don't start with "This report" or "This research". Include 1-2 links to key tools/projects. Be specific but brief. No emoji."""
-        result = subprocess.run(
-            ['llm', '-m', MODEL, '-s', prompt],
-            stdin=open(readme_path),
-            capture_output=True,
-            text=True,
-            timeout=60
-        )
+        with open(readme_path) as f:
+            result = subprocess.run(
+                ['llm', '-m', MODEL, '-s', prompt],
+                stdin=f,
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
         if result.returncode != 0:
             error_msg = f"LLM command failed for {dirname} with return code {result.returncode}"
             if result.stderr:
@@ -117,6 +119,11 @@ for dirname, commit_date in subdirs_with_dates:
             raise RuntimeError(error_msg)
         if result.stdout.strip():
             description = result.stdout.strip()
+            # Validate summary is reasonable before caching (at least 20 chars, not too long)
+            if len(description) < 20:
+                raise RuntimeError(f"LLM summary for {dirname} is too short: {description}")
+            if len(description) > 2000:
+                raise RuntimeError(f"LLM summary for {dirname} is too long ({len(description)} chars)")
             print(description)
             # Save to cache file
             with open(summary_path, 'w') as f:

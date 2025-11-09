@@ -5,14 +5,11 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-
 jobs:
   update-readme:
     runs-on: ubuntu-latest
-    
-    # ADDED: Explicitly grant the job the 'models: read' scope:
+
+    # Explicitly grant the job the 'models: read' scope:
     permissions:
       contents: write
       pull-requests: write # Recommended for safety/future use.
@@ -37,9 +34,9 @@ jobs:
 
       - name: Run cogapp to update README
         env:
-          # The llm-github-models plugin automatically finds the
-          # GH_MODELS_TOKEN and uses it for authentication, provided
-          # 'models: read' is set above:
+          # GH_MODELS_TOKEN is a repository secret allowing access to GPT-4.1-nano in GitHub Models
+          # for documenting research experiments in _summary.md files. The llm-github-models plugin
+          # uses this token with only the required models:read scope.
           GITHUB_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
         run: |
           cog -r -P README.md
@@ -49,7 +46,7 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add README.md
-          git add */_summary.md 2>/dev/null || true
+          git add -- **/_summary.md 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else

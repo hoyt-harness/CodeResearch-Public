@@ -1,12 +1,5 @@
 # pyproject.toml
 
-# --- [tool.black] ---
-# Code formatter:
-[tool.black]
-line-length = 88
-target-version = ['py312', 'py313']
-include = '\.pyi?$'
-
 # --- [tool.ruff] ---
 # Code linter:
 [tool.ruff]

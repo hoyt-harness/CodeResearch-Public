@@ -35,8 +35,7 @@ jobs:
       - name: Run Ruff Checks (Formatting & Linting)
         run: |
           # The exit code from this command determines the status of the job
+          # --exit-non-zero-on-fix: Fails if auto-fixable issues are found (forces contributors to fix locally)
           # --check: Does not modify files, only checks for issues
-          # --fix: Automatically applies fixes for linting issues
-          # --exit-code: Returns a non-zero exit code if issues are found
-          ruff check . --fix --show-fixes
+          ruff check . --exit-non-zero-on-fix
           ruff format . --check --diff
