@@ -1,21 +1,132 @@
 # 🔬 AI Code Research Repository (PUBLIC)
-
-This repository is dedicated to **asynchronous code research** and experimentation utilizing advanced AI agents, specifically **Google Jules**. The primary goal is to rapidly prototype, test hypotheses, and generate functional code snippets related to modern computing challenges, with a focus on **digital forensics and cyber investigation** methodologies.
+This repository is dedicated to **autonomous Artificial Intelligence code research** and experimentation utilizing advanced AI agents. The primary goal is to rapidly prototype, test hypotheses, and generate functional code snippets related to modern computing challenges, while leveraging AI to both develop and refine software, tools, methods, and solutions.
 
 ---
-
 ### ⚙️ Configuration & Technology
-
-* **Primary Contributor:** Google Jules (via dedicated service account).
-* **Core Language:** Python (enforced with **Ruff** formatting and linting rules defined in `pyproject.toml`).
-* **Methodology:** All code is generated in response to specific research prompts filed as GitHub Issues or managed via the agentic task runner (Gemini CLI).
-* **Contribution Process:** The AI agent directly commits its work via **Pull Requests (PRs)**, which serve as the primary audit log for each experiment.
+- **Research/Experiments Architect:** Claude Sonnet 4.5
+- **Experimental Researcher:** Google Jules
+- **Code Reviewer:** GitHub Copilot
+- **Documentation/Summaries:** GPT 4.1 Nano
+- **Core Language:** Python (enforced with **Ruff** formatting and linting rules defined in `pyproject.toml`).
+- **Methodology:** All code is generated in response to specific research prompts.
+- **Contribution Process:** The AI agent directly commits its work via **Pull Requests (PRs)** as long as the working repository enforces it, which serve as the primary audit log for each experiment.
 
 ---
-
 ### 🤝 Community and Reuse Policy
+- **⚠️ WARNING:** **This is a research environment.** Code quality is secondary to experimental outcome. **DO NOT** use any code from this repository in production or high-stakes environments without rigorous human review, testing, and validation.
+- **License:** All code is published under the **MIT License** (see `LICENSE` file for details).
+- **Discussion:** Use the **Discussions** tab to propose new research questions, discuss experimental results, or provide feedback on the AI agent's performance.
+- **Seeking Contribution:** If you wish to contribute test validation scripts or refined versions of the AI's output, please open a separate Pull Request targeting the specific experiment's folder.
 
-* **⚠️ WARNING:** **This is a research environment.** Code quality is secondary to experimental outcome. **DO NOT** use any code from this repository in production or high-stakes environments without rigorous human review, testing, and validation.
-* **License:** All code is published under the **MIT License** (see `LICENSE` file for details).
-* **Discussion:** Use the **Discussions** tab to propose new research questions, discuss experimental results, or provide feedback on the AI agent's performance.
-* **Seeking Contribution:** If you wish to contribute test validation scripts or refined versions of the AI's output, please open a separate Pull Request targeting the specific experiment's folder.
+---
+## 💼 Research Projects
+
+<!--[[[cog
+import os
+import subprocess
+import pathlib
+from datetime import datetime
+
+# Model to use for generating summaries
+MODEL = "openai/gpt-4.1-nano"
+
+# Get all subdirectories with their first commit dates
+research_dir = pathlib.Path.cwd()
+subdirs_with_dates = []
+
+for d in research_dir.iterdir():
+    if d.is_dir() and not d.name.startswith('.'):
+        # Get the date of the first commit that touched this directory
+        try:
+            result = subprocess.run(
+                ['git', 'log', '--diff-filter=A', '--follow', '--format=%aI', '--reverse', '--', d.name],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                # Parse first line (oldest commit)
+                date_str = result.stdout.strip().split('\n')[0]
+                commit_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                subdirs_with_dates.append((d.name, commit_date))
+            else:
+                # No git history, use directory modification time
+                subdirs_with_dates.append((d.name, datetime.fromtimestamp(d.stat().st_mtime)))
+        except Exception:
+            # Fallback to directory modification time
+            subdirs_with_dates.append((d.name, datetime.fromtimestamp(d.stat().st_mtime)))
+
+# Sort by date, most recent first
+subdirs_with_dates.sort(key=lambda x: x[1], reverse=True)
+
+for dirname, commit_date in subdirs_with_dates:
+    folder_path = research_dir / dirname
+    readme_path = folder_path / "README.md"
+    summary_path = folder_path / "_summary.md"
+
+    date_formatted = commit_date.strftime('%Y-%m-%d')
+
+    # Get GitHub repo URL
+    github_url = None
+    try:
+        result = subprocess.run(
+            ['git', 'remote', 'get-url', 'origin'],
+            capture_output=True,
+            text=True,
+            timeout=2
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            origin = result.stdout.strip()
+            # Convert SSH URL to HTTPS URL for GitHub
+            if origin.startswith('git@github.com:'):
+                origin = origin.replace('git@github.com:', 'https://github.com/')
+            if origin.endswith('.git'):
+                origin = origin[:-4]
+            github_url = f"{origin}/tree/main/{dirname}"
+    except Exception:
+        pass
+
+    if github_url:
+        print(f"### [{dirname}]({github_url}) ({date_formatted})\n")
+    else:
+        print(f"### {dirname} ({date_formatted})\n")
+
+    # Check if summary already exists
+    if summary_path.exists():
+        # Use cached summary
+        with open(summary_path, 'r') as f:
+            description = f.read().strip()
+            if description:
+                print(description)
+            else:
+                print("*No description available.*")
+    elif readme_path.exists():
+        # Generate new summary using llm command
+        prompt = """Summarize this research project concisely. Write just 1 paragraph (3-5 sentences) followed by an optional short bullet list if there are key findings. Vary your opening - don't start with "This report" or "This research". Include 1-2 links to key tools/projects. Be specific but brief. No emoji."""
+        result = subprocess.run(
+            ['llm', '-m', MODEL, '-s', prompt],
+            stdin=open(readme_path),
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        if result.returncode != 0:
+            error_msg = f"LLM command failed for {dirname} with return code {result.returncode}"
+            if result.stderr:
+                error_msg += f"\nStderr: {result.stderr}"
+            raise RuntimeError(error_msg)
+        if result.stdout.strip():
+            description = result.stdout.strip()
+            print(description)
+            # Save to cache file
+            with open(summary_path, 'w') as f:
+                f.write(description + '\n')
+        else:
+            raise RuntimeError(f"LLM command returned no output for {dirname}")
+    else:
+        print("*No description available.*")
+
+    print()  # Add blank line between entries
+
+]]]-->
+[[[end]]]

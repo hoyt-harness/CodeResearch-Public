@@ -1,18 +1,19 @@
 # pyproject.toml
 
 # --- [tool.black] ---
+# Code formatter:
 [tool.black]
 line-length = 88
-target-version = ['py311', 'py312']
+target-version = ['py312', 'py313']
+include = '\.pyi?$'
 
 # --- [tool.ruff] ---
+# Code linter:
 [tool.ruff]
-# E = pycodestyle errors, F = pyflakes errors, B = bugbear (common source of bugs)
+# E = pycodestyle, F = pyflakes, B = bugbear
 select = ["E", "F", "W", "I", "B"]
 ignore = [
-    # E501: Line too long. Black/Ruff formatting handles this.
     "E501",
-    # W503 has been removed/deprecated by Ruff and is no longer needed/valid.
 ]
 line-length = 88
 

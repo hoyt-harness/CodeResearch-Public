@@ -1,0 +1,63 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '**.py'  # Only trigger when Python files change
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - '**.py'  # Only trigger when Python files change
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'python' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Check if any Python files exist in research directories
+    - name: Check for Python files
+      id: check_python
+      run: |
+        if find . -name "*.py" -not -path "./.git/*" -not -path "./etc/*" -not -path "./.github/*" | grep -q .; then
+          echo "has_python=true" >> $GITHUB_OUTPUT
+          echo "Found Python files to analyze"
+        else
+          echo "has_python=false" >> $GITHUB_OUTPUT
+          echo "No Python research files found, skipping analysis"
+        fi
+
+    - name: Initialize CodeQL
+      if: steps.check_python.outputs.has_python == 'true'
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+
+    - name: Autobuild
+      if: steps.check_python.outputs.has_python == 'true'
+      uses: github/codeql-action/autobuild@v3
+
+    - name: Perform CodeQL Analysis
+      if: steps.check_python.outputs.has_python == 'true'
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"
+
+    - name: No Python code to analyze
+      if: steps.check_python.outputs.has_python == 'false'
+      run: |
+        echo "✓ No Python research code found - skipping CodeQL analysis"
+        echo "CodeQL will automatically run when Python files are added to the repository"
