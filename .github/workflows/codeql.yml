@@ -3,8 +3,12 @@ name: "CodeQL"
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - '**.py'  # Only trigger when Python files change
   pull_request:
     branches: [ "main" ]
+    paths:
+      - '**.py'  # Only trigger when Python files change
   schedule:
     - cron: '0 0 * * 1'  # Run weekly on Mondays
 
@@ -26,15 +30,31 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Check for Python files
+      id: check_python
+      run: |
+        if find . -name "*.py" -not -path "./.git/*" -not -path "./etc/*" | grep -q .; then
+          echo "has_python=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_python=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Initialize CodeQL
+      if: steps.check_python.outputs.has_python == 'true'
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
 
     - name: Autobuild
+      if: steps.check_python.outputs.has_python == 'true'
       uses: github/codeql-action/autobuild@v3
 
     - name: Perform CodeQL Analysis
+      if: steps.check_python.outputs.has_python == 'true'
       uses: github/codeql-action/analyze@v3
       with:
         category: "/language:${{matrix.language}}"
+
+    - name: Skip CodeQL (No Python code found)
+      if: steps.check_python.outputs.has_python == 'false'
+      run: echo "No Python files found, skipping CodeQL analysis"
