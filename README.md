@@ -136,3 +136,37 @@ for dirname, commit_date in subdirs_with_dates:
     print()  # Add blank line between entries
 
 ]]]-->
+
+<!--[[[end]]]-->
+
+---
+## 📰 Documentation
+The **Documentation/Summaries agent** (GPT 4.1 Nano) automatically generates project descriptions which are recorded in `_summary.md` in the target experiment's root home subdirectory.
+
+### Automatic Updates
+A GitHub Action auto-triggers an update of the repository's `README.md` (this file) to add or update new target experiment information on every push to main.
+
+### Manual updates
+To manually update the local repository that can then be manually pushed to GitHub, install [Cog](https://cog.readthedocs.io/en/latest/ "Cog"), then:
+
+```bash
+cd /path/to/repo
+
+# Run cogapp to regenerate the project list:
+cog -r -P README.md
+```
+
+The embedded script in `README.md` automatically:
+- Discovers all subdirectories in the repository root
+- Gets the first commit date for each subdirectory and sorts by most recent first
+- Checks subdirectories for a `_summary.md` file
+- If the summary exists, it uses the cached version
+- If not, it generates a new summary using:
+  ```bash
+  # Includes prompt that creates engaging descriptions with bullets and links
+  llm -m <!--[[[cog print(MODEL, end='')]]]--><!--[[[end]]]-->
+  ```
+- Creates Markdown links to each project folder on GitHub
+- New summaries are saved to `_summary.md` to avoid regenerating them on every run
+
+To regenerate a specific project's description, delete its `_summary.md` file and run `cog -r -P README.md` again.
