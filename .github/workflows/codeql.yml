@@ -3,12 +3,8 @@ name: "CodeQL"
 on:
   push:
     branches: [ "main" ]
-    paths:
-      - '**.py'  # Only trigger when Python files change
   pull_request:
     branches: [ "main" ]
-    paths:
-      - '**.py'  # Only trigger when Python files change
 
 jobs:
   analyze:
