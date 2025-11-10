@@ -164,7 +164,7 @@ The embedded script in `README.md` automatically:
 - If not, it generates a new summary using:
   ```bash
   # Includes prompt that creates engaging descriptions with bullets and links
-  llm -m <!--[[[cog print(MODEL, end='')]]]--><!--[[[end]]]-->
+  llm -m openai/gpt-4.1-nano
   ```
 - Creates Markdown links to each project folder on GitHub
 - New summaries are saved to `_summary.md` to avoid regenerating them on every run
