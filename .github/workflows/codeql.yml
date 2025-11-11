@@ -1,10 +1,12 @@
-name: "CodeQL"
+# .github/workflows/codeql.yml
+
+name: CodeQL
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
   analyze:
@@ -18,13 +20,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'python' ]
+        language: [ python ]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Check if any Python files exist in research directories
     - name: Check for Python files
       id: check_python
       run: |
