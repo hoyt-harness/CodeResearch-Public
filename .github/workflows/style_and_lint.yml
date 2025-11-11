@@ -1,19 +1,14 @@
 # .github/workflows/style_and_lint.yml
 
-name: Code Style and Linting
+name: style_and_lint
 
-# Trigger this workflow only on Pull Requests (PRs):
 on:
   pull_request:
-    branches: [ main ]  # Only run for PRs targeting the main branch.
+    branches: [ main ]
 
-# Permissions are set to default (read/write) for public repos, but
-# specifying is good practice. We only need to set the status (write to
-# pull-requests). Enforce least privilege for the token used by the
-# workflow:
 permissions:
-  contents: read # Needs read access to check out the code.
-  pull-requests: write # Needs write access to set the PR status.
+  contents: read
+  pull-requests: write
 
 jobs:
   style_and_lint:
@@ -26,16 +21,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-          cache: 'pip' # Optional: Speeds up subsequent runs.
+          cache: 'pip'
 
       - name: Install Ruff
-        run: pip install ruff
+        run: pip install ruff==0.14.4
 
-      # The actual validation check that replaces Black and Flake8:
-      - name: Run Ruff Checks (Formatting & Linting)
+      - name: Run Ruff Format Check
         run: |
-          # The exit code from this command determines the status of the job
-          # --exit-non-zero-on-fix: Fails if auto-fixable issues are found (forces contributors to fix locally)
-          # --check: Does not modify files, only checks for issues
-          ruff check . --exit-non-zero-on-fix
           ruff format . --check --diff
+
+      - name: Run Ruff Linting
+        run: |
+          ruff check .
