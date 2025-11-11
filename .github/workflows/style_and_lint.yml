@@ -29,7 +29,11 @@ jobs:
           cache: 'pip' # Optional: Speeds up subsequent runs.
 
       - name: Install Ruff
+<<<<<<< Updated upstream
         run: pip install ruff
+=======
+        run: pip install ruff==0.14.4
+>>>>>>> Stashed changes
 
       # The actual validation check that replaces Black and Flake8:
       - name: Run Ruff Checks (Formatting & Linting)
