@@ -38,6 +38,7 @@ This is an experimental AI research repository where autonomous AI agents collab
 - **Priority**: Security vulnerabilities (CWE-categorized: injection, path traversal, resource exhaustion)
 - **Secondary**: Reproducibility issues (hardcoded paths, missing dependencies, undocumented assumptions)
 - **Out of scope**: Style/formatting (Ruff handles this automatically)
+- **Review capture**: All Copilot findings are automatically documented in GitHub Issues after PR merge (see "Copilot Review Automation" below)
 
 ### For Documentation (GPT-4.1-nano)
 
@@ -97,6 +98,22 @@ CodeResearch-Public/
   2. **CodeQL**: Security vulnerability scanning (must pass)
 - **Auto-merge**: PRs automatically merge once checks pass (0 manual approvals required)
 
+### Copilot Review Automation
+
+- **Trigger**: When a PR is merged to `main`
+- **Process**: GitHub Action captures all Copilot review comments and creates a consolidated Issue
+- **Categorization**: Findings are automatically sorted by severity:
+  - 🔒 **Security Issues** (priority-high): Vulnerabilities, exploits, authentication issues
+  - 🚨 **Critical Issues** (priority-high): Crashes, errors, null pointers, exceptions
+  - ⚡ **Performance Issues** (priority-medium): Inefficiencies, timeouts, bottlenecks
+  - 🔧 **Maintainability Issues** (priority-medium): Code quality, duplication, complexity
+  - 💅 **Style Issues** (priority-low): Formatting, unused imports, conventions
+  - 📝 **Other Findings**: Miscellaneous comments
+- **Labels**: Issues are tagged with `copilot-findings`, severity labels, priority levels, and experiment names
+- **Purpose**: Creates permanent audit trail of code quality concerns for future reference
+- **Action required**: None immediately - issues document concerns if experiment results are used in production
+- **Agent action**: Researchers should be aware findings are captured but can proceed with experiments regardless of review comments
+
 ### Dependabot
 
 - **Schedule**: Weekly dependency updates
@@ -113,9 +130,12 @@ CodeResearch-Public/
 4. Implement experiment code following Ruff standards
 5. Test locally if possible
 6. Create Pull Request with clear description
-7. **Enable auto-merge** on the PR immediately after creation
-8. Allow CI/CD checks to run
-9. Auto-merge will handle merge once checks pass
+7. **Monitor PR for Copilot feedback** - Check back within 5-10 minutes for review comments
+8. **Address review comments** (optional) - If Copilot flags critical issues, consider pushing fixes to the same branch
+9. **Enable auto-merge** on the PR after reviewing Copilot feedback
+10. Allow CI/CD checks to run
+11. Auto-merge will handle merge once checks pass
+12. **Copilot findings are automatically captured** - A GitHub Issue will be created documenting all review comments
 
 ### Handling Failures
 
@@ -124,12 +144,31 @@ CodeResearch-Public/
 - **Security alerts**: Address immediately, push fixes to same PR
 - **Experiment failures**: Document findings in README.md, merge anyway (failure is data)
 
+### Copilot Review Workflow
+
+**For Experimental Researchers (Jules):**
+- Copilot will review your code automatically after PR creation
+- Review comments are informational - experiments should complete regardless of findings
+- Critical security issues may warrant immediate attention, but most findings can be addressed later
+- All findings are automatically documented in Issues after merge
+
+**For Repository Maintainers (Hoyt, Claude):**
+- Review Copilot's comments before merging PRs
+- For minor issues (style, unused variables): Resolve conversation and merge
+- For critical issues (security, logic bugs): Consider requesting fixes or create follow-up Issue
+- After merge, verify that automated Issue was created with all findings
+- Use Issue labels to filter findings: `priority-high`, `security`, `experiment:[name]`
+
+**Philosophy:**
+Experiments should ship with their flaws - that's the point of research! Copilot findings create an audit trail for future consideration if experiment results become production candidates. No urgency to fix unless issues prevent experiment completion.
+
 ### Communication
 
 - **Between agents**: Use PR comments and review feedback
 - **Questions**: Tag specific agents in PR comments or open GitHub Issues
 - **Discussions**: Use repository Discussions tab for research questions
 - **Bugs**: Open GitHub Issues with `bug` label
+- **Copilot findings**: Automatically captured in Issues after PR merge
 
 ## What NOT to Do
 
