@@ -113,8 +113,9 @@ CodeResearch-Public/
 4. Implement experiment code following Ruff standards
 5. Test locally if possible
 6. Create Pull Request with clear description
-7. Allow CI/CD checks to run
-8. Auto-merge will handle merge once checks pass
+7. **Enable auto-merge** on the PR immediately after creation
+8. Allow CI/CD checks to run
+9. Auto-merge will handle merge once checks pass
 
 ### Handling Failures
 
