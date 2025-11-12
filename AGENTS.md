@@ -130,7 +130,7 @@ CodeResearch-Public/
 4. Implement experiment code following Ruff standards
 5. Test locally if possible
 6. Create Pull Request with clear description
-7. **Monitor PR for Copilot feedback** - Check back within 5-10 minutes for review comments
+7. **Monitor PR for Copilot feedback** - Copilot review is automatic if configured; check for review comments before proceeding
 8. **Address review comments** (optional) - If Copilot flags critical issues, consider pushing fixes to the same branch
 9. **Enable auto-merge** on the PR after reviewing Copilot feedback
 10. Allow CI/CD checks to run

@@ -53,15 +53,15 @@ jobs:
               return;
             }
             
-            // Check if we already created an issue for this PR
+            // Check if we already created an issue for this PR (search all states)
             const repoFull = `${context.repo.owner}/${context.repo.repo}`;
-            const searchQuery = `repo:${repoFull} in:title "Copilot Review PR #${prNumber}" state:open`;
+            const searchQuery = `repo:${repoFull} in:title "Copilot Review PR #${prNumber}"`;
             const { data: existingIssues } = await github.rest.search.issuesAndPullRequests({
               q: searchQuery
             });
             
             if (existingIssues.total_count > 0) {
-              core.info(`Issue already exists for PR #${prNumber}; skipping creation.`);
+              core.info(`Issue already exists for PR #${prNumber} (found ${existingIssues.total_count}); skipping creation.`);
               return;
             }
             
