@@ -1,0 +1,236 @@
+name: Capture Copilot Review Findings
+
+# Trigger when a PR is closed (includes merged PRs)
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  create-copilot-review-issue:
+    # Only run if the PR was actually merged (not just closed)
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+      contents: read
+    
+    steps:
+      - name: Gather Copilot review comments and create issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const prTitle = pr.title;
+            const prUrl = pr.html_url;
+            const prAuthor = pr.user.login;
+            const mergedAt = pr.merged_at;
+            
+            core.info(`Processing merged PR #${prNumber}: ${prTitle}`);
+            
+            // Fetch all review comments on this PR
+            const { data: reviewComments } = await github.rest.pulls.listReviewComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              per_page: 100
+            });
+            
+            core.info(`Found ${reviewComments.length} total review comments`);
+            
+            // Filter for Copilot comments only
+            const copilotComments = reviewComments.filter(comment => {
+              const author = (comment.user?.login || '').toLowerCase();
+              return author.includes('copilot') || author.includes('github-copilot');
+            });
+            
+            core.info(`Found ${copilotComments.length} Copilot review comments`);
+            
+            // If no Copilot comments, skip issue creation
+            if (copilotComments.length === 0) {
+              core.info('No Copilot review comments found; skipping issue creation.');
+              return;
+            }
+            
+            // Check if we already created an issue for this PR
+            const repoFull = `${context.repo.owner}/${context.repo.repo}`;
+            const searchQuery = `repo:${repoFull} in:title "Copilot Review PR #${prNumber}" state:open`;
+            const { data: existingIssues } = await github.rest.search.issuesAndPullRequests({
+              q: searchQuery
+            });
+            
+            if (existingIssues.total_count > 0) {
+              core.info(`Issue already exists for PR #${prNumber}; skipping creation.`);
+              return;
+            }
+            
+            // Enhanced categorization with better keyword matching
+            const categorized = {
+              security: [],
+              critical: [],
+              performance: [],
+              maintainability: [],
+              style: [],
+              other: []
+            };
+            
+            copilotComments.forEach(comment => {
+              const body = (comment.body || '').toLowerCase();
+              
+              // Security issues - use word boundaries for precise matching
+              if (body.match(/\b(security|vulnerability|vulnerabilities|exploit|injection|xss|csrf|auth|authentication|authorization|leak|leakage|exposed|sanitize|sanitization)\b/)) {
+                categorized.security.push(comment);
+              } 
+              // Critical bugs and errors
+              else if (body.match(/\b(critical|error|crash|fail|failure|exception|null pointer|memory leak|undefined|throw|throws|fatal)\b/)) {
+                categorized.critical.push(comment);
+              }
+              // Performance issues
+              else if (body.match(/\b(performance|slow|slowdown|timeout|inefficient|efficiency|complexity|bottleneck|optimize|optimization|expensive)\b/)) {
+                categorized.performance.push(comment);
+              }
+              // Maintainability and code quality
+              else if (body.match(/\b(duplicate|duplication|redundant|redundancy|complex|complexity|confusing|unclear|magic number|hard.?coded|hardcoded|refactor|improve)\b/)) {
+                categorized.maintainability.push(comment);
+              }
+              // Style and formatting
+              else if (body.match(/\b(style|format|formatting|unused|import|whitespace|indentation|spacing|naming|convention)\b/)) {
+                categorized.style.push(comment);
+              }
+              // Everything else
+              else {
+                categorized.other.push(comment);
+              }
+            });
+            
+            // Build issue body with all findings
+            const buildCommentSection = (comments, title, emoji) => {
+              if (comments.length === 0) return '';
+              
+              let section = `\n### ${emoji} ${title} (${comments.length})\n\n`;
+              comments.forEach(comment => {
+                section += `#### 📄 \`${comment.path}\` (Line ${comment.line || comment.position || 'N/A'})\n\n`;
+                section += `${comment.body}\n\n`;
+                section += `[View comment](${comment.html_url})\n\n`;
+                section += `---\n\n`;
+              });
+              return section;
+            };
+            
+            const issueBody = [
+              `## Experiment Details`,
+              ``,
+              `- **PR:** [#${prNumber} - ${prTitle}](${prUrl})`,
+              `- **Author:** @${prAuthor}`,
+              `- **Merged:** ${mergedAt}`,
+              `- **Total Copilot Findings:** ${copilotComments.length}`,
+              ``,
+              `---`,
+              ``,
+              `## Copilot Review Summary`,
+              ``,
+              `This issue captures all code review findings from GitHub Copilot for reference. These findings are documented for future consideration if this experiment's results are used in production code.`,
+              ``,
+              buildCommentSection(categorized.security, 'Security Issues', '🔒'),
+              buildCommentSection(categorized.critical, 'Critical Issues', '🚨'),
+              buildCommentSection(categorized.performance, 'Performance Issues', '⚡'),
+              buildCommentSection(categorized.maintainability, 'Maintainability Issues', '🔧'),
+              buildCommentSection(categorized.style, 'Style Issues', '💅'),
+              buildCommentSection(categorized.other, 'Other Findings', '📝'),
+              ``,
+              `---`,
+              ``,
+              `## Action Required`,
+              ``,
+              `- [ ] None - issues documented for future reference`,
+              `- [ ] Address before production use`,
+              `- [ ] Already resolved in subsequent commits`,
+              ``,
+              `---`,
+              ``,
+              `*This issue was automatically created from Copilot review comments on PR #${prNumber}*`
+            ].join('\n');
+            
+            // Determine labels based on findings with priority indicators
+            const labels = ['copilot-findings'];
+            
+            // Add category labels with priorities
+            if (categorized.security.length > 0) {
+              labels.push('security', 'priority-high');
+            }
+            if (categorized.critical.length > 0) {
+              labels.push('critical', 'priority-high');
+            }
+            if (categorized.performance.length > 0) {
+              labels.push('performance', 'priority-medium');
+            }
+            if (categorized.maintainability.length > 0) {
+              labels.push('maintainability', 'priority-medium');
+            }
+            if (categorized.style.length > 0) {
+              labels.push('style', 'priority-low');
+            }
+            
+            // Extract experiment name from changed files (better than PR title parsing)
+            const { data: filesChanged } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              per_page: 100
+            });
+            
+            // Identify experiment directories (top-level directories that aren't config)
+            const experimentDirs = new Set();
+            filesChanged.forEach(file => {
+              const match = file.filename.match(/^([^\/]+)\//);
+              if (match && !match[1].startsWith('.') && match[1] !== 'etc') {
+                experimentDirs.add(match[1]);
+              }
+            });
+            
+            // If there's exactly one experiment directory, add it as a label
+            if (experimentDirs.size === 1) {
+              const expName = Array.from(experimentDirs)[0];
+              labels.push(`experiment:${expName}`);
+              core.info(`Detected experiment: ${expName}`);
+            } else if (experimentDirs.size > 1) {
+              core.info(`Multiple experiment directories detected: ${Array.from(experimentDirs).join(', ')}`);
+              // Add all experiment labels
+              experimentDirs.forEach(expName => {
+                labels.push(`experiment:${expName}`);
+              });
+            }
+            
+            // Remove duplicate labels
+            const uniqueLabels = [...new Set(labels)];
+            
+            // Create the issue
+            const issueTitle = `[Copilot Review] PR #${prNumber}: ${prTitle}`;
+            
+            const { data: issue } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: uniqueLabels
+            });
+            
+            core.info(`Created issue #${issue.number}: ${issue.html_url}`);
+            
+            // Add a comment to the PR linking to the issue for bidirectional traceability
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `📋 Copilot review findings have been documented in issue #${issue.number}\n\n` +
+                    `**Summary:**\n` +
+                    `- 🔒 Security: ${categorized.security.length}\n` +
+                    `- 🚨 Critical: ${categorized.critical.length}\n` +
+                    `- ⚡ Performance: ${categorized.performance.length}\n` +
+                    `- 🔧 Maintainability: ${categorized.maintainability.length}\n` +
+                    `- 💅 Style: ${categorized.style.length}\n` +
+                    `- 📝 Other: ${categorized.other.length}`
+            });
+            
+            core.info('Workflow completed successfully.');
