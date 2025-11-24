@@ -1,4 +1,7 @@
 # 🔬 AI Code Research Repository (PUBLIC)
+...and no sooner than I got this project off the ground, the AI dev world once again morphed. Jules, while not officially deprecated, has been effectively superseded by Google's Antigravity, specifically Antigravity's Manager View. The nice thing about this is that you can now conduct asynchronous and autonomous code experiments locally without requiring a GitHub repo. This is good since you might want to keep many experiments you conduct under wraps. Positronikal maintains a corresponding private GitHub repo for those experiments, but Antigravity means neither the public nor the private repos are necessary any longer. For what it's worth, If you're a Project IDX (Google's cloud IDE) or Gemini Code Assist (for VS Code), Antigravity means you can ditch those, too. Such is the rapidly developing and ever changing world of AI we live in nowadays.
+
+---
 This repository is dedicated to **autonomous Artificial Intelligence code research** and experimentation utilizing advanced AI agents. The primary goal is to rapidly prototype, test hypotheses, and generate functional code snippets related to modern computing challenges, while leveraging AI to both develop and refine software, tools, methods, and solutions.
 
 ---
